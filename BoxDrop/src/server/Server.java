@@ -25,6 +25,7 @@ public class Server {
 	
 	public Socket acceptNewConnection() {
 		try {
+			System.out.println("Waiting for connection.");
 			Socket newSocket = serverSocket.accept();
 			liveSockets.add(newSocket);
 			return newSocket;

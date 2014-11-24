@@ -22,6 +22,7 @@ public class ServerListenerThread implements Runnable {
 			} catch (IOException ex) {
 				client.closeSocket();
 				ex.printStackTrace();
+				break;
 			}
 		}
 	}

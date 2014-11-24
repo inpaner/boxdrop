@@ -41,6 +41,8 @@ import java.nio.file.attribute.*;
 import java.io.*;
 import java.util.*;
 
+import commons.Job;
+
 /**
  * Class for watching a directory (or tree) for changes to files. 
  * Modified from https://docs.oracle.com/javase/tutorial/essential/io/notification.html
@@ -51,7 +53,9 @@ public class WatchDir {
     private final Map<WatchKey,Path> keys;
     private final boolean recursive;
     private boolean trace = false;
-
+    
+    private Client client;
+    
     @SuppressWarnings("unchecked")
     static <T> WatchEvent<T> cast(WatchEvent<?> event) {
         return (WatchEvent<T>)event;
@@ -98,7 +102,9 @@ public class WatchDir {
     /**
      * Creates a WatchService and registers the given directory
      */
-    WatchDir(Path dir, boolean recursive) throws IOException {
+    WatchDir(Client client, boolean recursive) throws IOException {
+    	this.client = client;
+    	Path dir = client.getDir();
         this.watcher = FileSystems.getDefault().newWatchService();
         this.keys = new HashMap<WatchKey,Path>();
         this.recursive = recursive;
@@ -120,7 +126,7 @@ public class WatchDir {
      * Process all events for keys queued to the watcher
      */
     void processEvents() {
-        for (;;) {
+        while (true) {
             // wait for key to be signalled
             WatchKey key;
             try {
@@ -150,6 +156,11 @@ public class WatchDir {
 
                 // print out event
                 System.out.format("%s: %s\n", event.kind().name(), child);
+                
+                if (kind == ENTRY_CREATE) {
+                	client.sendJob(new Job());
+                	continue;
+                }
                 
                 // if directory is created, and watching recursively, then
                 // register it and its sub-directories
@@ -187,7 +198,7 @@ public class WatchDir {
 
         // register directory and process its events
         Path dir = Paths.get("server");
-        new WatchDir(dir, recursive).processEvents();
+        // new WatchDir(dir, recursive).processEvents();
     }
     
     public static void main2(String[] args) throws IOException {
@@ -205,6 +216,6 @@ public class WatchDir {
 
         // register directory and process its events
         Path dir = Paths.get(args[dirArg]);
-        new WatchDir(dir, recursive).processEvents();
+        // new WatchDir(dir, recursive).processEvents();
     }
 }

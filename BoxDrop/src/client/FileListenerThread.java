@@ -1,5 +1,8 @@
 package client;
 
+import java.io.IOException;
+import java.nio.file.Path;
+
 
 public class FileListenerThread implements Runnable {
 	private Client client;
@@ -10,8 +13,10 @@ public class FileListenerThread implements Runnable {
 
 	@Override
 	public void run() {
-		while (true) {
-			
+		try {
+			new WatchDir(client, true).processEvents();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 }

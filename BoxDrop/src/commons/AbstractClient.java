@@ -2,6 +2,7 @@ package commons;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
@@ -18,6 +19,23 @@ public abstract class AbstractClient {
 			OutputStream outputStream = socket.getOutputStream();
 			DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
 			dataOutputStream.writeUTF(message);
+			
+			dataOutputStream.close();
+			outputStream.close();
+		} catch (IOException e) {
+			closeSocket();
+			e.printStackTrace();
+		}
+	}
+	
+	public void sendJob(Job job) {
+		try {
+			OutputStream outputStream = socket.getOutputStream();
+			ObjectOutputStream objectStream = new ObjectOutputStream(outputStream);
+			objectStream.writeObject(job);
+			
+			// objectStream.close();
+			// outputStream.close();
 		} catch (IOException e) {
 			closeSocket();
 			e.printStackTrace();
