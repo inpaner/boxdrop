@@ -17,7 +17,7 @@ public class ClientManager {
 	
 	
 	private List<ClientProxy> clients = new ArrayList<>();
-
+	
 	
 	void newlyConnected(Socket socket) {
 		ClientProxy client = new ClientProxy(socket);

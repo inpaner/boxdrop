@@ -1,6 +1,9 @@
 package commons;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 
 public class Job implements Serializable {
@@ -14,12 +17,27 @@ public class Job implements Serializable {
 	private long lastModified;
 	private JobType type;
 	
-	public Job() {
+	public Job(Path path, JobType type) {
 		jobTime = System.currentTimeMillis();
-		type = JobType.CREATE;
+		filename = path.toString();
+		try {
+			lastModified = Files.getLastModifiedTime(path).toMillis();
+		} catch (IOException ex) {
+			System.out.println("Error accessing file while creating Job.");
+			ex.printStackTrace();
+		}
+		
+		this.type = type;
 	}
 
 	
+	public Job(JobType type, String filename, long lastModified) {
+		this.type = type;
+		this.filename = filename;
+		this.lastModified = lastModified;
+	}
+
+
 	public long getJobTime() {
 		return jobTime;
 	}
@@ -38,8 +56,14 @@ public class Job implements Serializable {
 	public long getLastModified() {
 		return lastModified;
 	}
-
+	
+	
 	public JobType getType() {
 		return type;
+	}
+	
+	
+	public String toString() {
+		return(type + ": " + filename + "@" + lastModified);
 	}
 }

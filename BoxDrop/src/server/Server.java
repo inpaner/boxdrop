@@ -3,14 +3,20 @@ package server;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 
 public class Server {
+	static Path FOLDER;
 	private ServerSocket serverSocket;
 	private ArrayList<Socket> liveSockets;
-
+	
 	public Server(int portNumber) {
-
+		FOLDER = Paths.get("server");
+		
+		ServerJobManager.getInstance().setFolder(FOLDER);
+		
 		liveSockets = new ArrayList<Socket>();
 
 		try {

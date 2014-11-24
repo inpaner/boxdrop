@@ -42,6 +42,7 @@ import java.io.*;
 import java.util.*;
 
 import commons.Job;
+import commons.JobType;
 
 /**
  * Class for watching a directory (or tree) for changes to files. 
@@ -53,7 +54,6 @@ public class WatchDir {
     private final Map<WatchKey,Path> keys;
     private final boolean recursive;
     private boolean trace = false;
-    
     private Client client;
     
     @SuppressWarnings("unchecked")
@@ -104,7 +104,7 @@ public class WatchDir {
      */
     WatchDir(Client client, boolean recursive) throws IOException {
     	this.client = client;
-    	Path dir = client.getDir();
+    	Path dir = client.getFolder();
         this.watcher = FileSystems.getDefault().newWatchService();
         this.keys = new HashMap<WatchKey,Path>();
         this.recursive = recursive;
@@ -120,7 +120,24 @@ public class WatchDir {
         // enable trace after initial registration
         this.trace = true;
     }
-
+    
+    
+    private void create(Path path) {
+    	Job job = JobManager.getInstance().newCreate(path);
+    	client.sendJob(job);
+    }
+    
+    
+    private void modify(Path path) {
+    	Job job = JobManager.getInstance().newModify(path);
+    	client.sendJob(job);
+    }
+    
+    
+    private void delete(Path path) {
+    	Job job = JobManager.getInstance().newDelete(path);
+    	client.sendJob(job);
+    }
     
     /**
      * Process all events for keys queued to the watcher
@@ -154,13 +171,17 @@ public class WatchDir {
                 Path name = ev.context();
                 Path child = dir.resolve(name);
 
-                // print out event
-                System.out.format("%s: %s\n", event.kind().name(), child);
-                
                 if (kind == ENTRY_CREATE) {
-                	client.sendJob(new Job());
+                	create(child);
+                	continue;
+                } else if (kind == ENTRY_DELETE) {
+                	delete(child);
+                	continue;
+                } else if (kind == ENTRY_MODIFY) {
+                	modify(child);
                 	continue;
                 }
+                
                 
                 // if directory is created, and watching recursively, then
                 // register it and its sub-directories
