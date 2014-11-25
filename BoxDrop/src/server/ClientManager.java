@@ -27,9 +27,10 @@ public class ClientManager {
 	
 	
 	void broadcast(AbstractClient caller, Job job) {
+		job.setForSending();
 		for (ClientProxy client : clients) {
 			if (!client.equals(caller)) {
-				System.out.println("Will broadcasting job to: " + client.getSocket().getRemoteSocketAddress());
+				System.out.println("Will broadcast job to: " + client.getSocket().getRemoteSocketAddress());
 				ServerJobManager.getInstance().enqueue(client, job);
 				// client.sendJob(job); // bypass queue
 			}

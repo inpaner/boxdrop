@@ -12,7 +12,6 @@ public class ServerJobManager extends JobManager {
 	
 	
 	public static ServerJobManager getInstance() {
-		System.out.println("Getting ServerJobManager");
 		return (ServerJobManager) instance;
 	}
 	

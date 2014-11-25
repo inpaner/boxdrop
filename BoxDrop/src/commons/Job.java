@@ -71,7 +71,11 @@ public class Job implements Serializable {
 		toSend = false;
 	}
 	
+	public void setForSending() {
+		toSend = true;
+	}
+	
 	public String toString() {
-		return(type + ": " + filename + "@" + lastModified);
+		return(type + ": " + filename + " @ " + lastModified);
 	}
 }

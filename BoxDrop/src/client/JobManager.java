@@ -71,6 +71,7 @@ public class JobManager {
 			handle(jobstruct);
 		} else {
 			jobs.add(jobstruct);
+			System.out.println("Jobs: " + jobs.size());
 		}
 	}
 	
@@ -186,14 +187,13 @@ public class JobManager {
 			byte[] buffer = new byte[BUFFER_SIZE];
             
 			int bytesRead;
-			System.out.println("Sending: ");
+			System.out.println("Sending. ");
             while((bytesRead = inputStream.read(buffer)) != -1){
             	Util.print(buffer);
             	dos.write(buffer, 0, bytesRead);
             }
 			
 			System.out.println("File sent.");
-			
 			
 			dos.write(Constants.EOF, 0, Constants.EOF.length);
 			dos.flush();
