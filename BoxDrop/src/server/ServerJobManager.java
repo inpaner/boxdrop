@@ -18,23 +18,25 @@ public class ServerJobManager extends JobManager {
 	
 	@Override
 	protected synchronized boolean handleCreate(AbstractClient client, Job job) {
-		boolean success = false;
-		success = super.handleCreate(client, job);
+		boolean success = super.handleCreate(client, job);
 		
-		// broadcast that shit
-		if (success)
+		if (success) {
 			ClientManager.getInstance().broadcast(client, job);
+		}
 		
 		return success;
 	}
 	
 	
 	@Override
-	protected synchronized void handleDelete(AbstractClient client, Job job) {
-		super.handleDelete(client, job);
+	protected synchronized boolean handleDelete(AbstractClient client, Job job) {
+		boolean success = super.handleDelete(client, job);
 		
-		// broadcast that shit
-		ClientManager.getInstance().broadcast(client, job);
+		if (success) {
+			ClientManager.getInstance().broadcast(client, job);
+		}
+		
+		return success;
 	}
 	
 }

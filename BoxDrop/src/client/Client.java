@@ -17,7 +17,7 @@ public class Client extends AbstractClient {
 		JobListenerThread jlt = new JobListenerThread(this, JobManager.getInstance());
 		new Thread(jlt).start();
 		
-		new Thread(new FileListenerThread(this)).start();
+		new Thread(new DirectoryListenerThread(this)).start();
 	}
 	
 	Path getFolder() {

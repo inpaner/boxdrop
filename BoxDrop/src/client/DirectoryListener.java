@@ -125,22 +125,58 @@ public class DirectoryListener {
     
     private void create(Path path) {
     	Job job = JobManager.getInstance().newCreate(path);
-    	JobManager.getInstance().enqueue(client, job);
+    	jobBuffer.add(job);
     }
     
     
     private void modify(Path path) {
-    	// Job job = JobManager.getInstance().newModify(path);
-    	// client.sendJob(job);
+    	Job job = JobManager.getInstance().newModify(path);
+    	jobBuffer.add(job);
     }
     
     
     private void delete(Path path) {
     	Job job = JobManager.getInstance().newDelete(path);
-    	JobManager.getInstance().enqueue(client, job);
+    	jobBuffer.add(job);
     }
     
-    /**
+    
+    private List<Job> jobBuffer = new ArrayList<>();
+    
+    private void finishedEventBatch() {
+    	System.out.println("Job Buffer: " + jobBuffer.size());
+		boolean hasChanges = true;
+		while (hasChanges) {
+			hasChanges = false;
+			
+			ListIterator<Job> jobIterator = jobBuffer.listIterator();
+			Job currentJob = jobIterator.next();
+			
+			while (jobIterator.hasNext()) {
+				
+				// Remove create and modify if create already exists
+	    		if (currentJob.getType().equals(JobType.CREATE) 
+	    				|| currentJob.getType().equals(JobType.MODIFY)) {
+	    			
+	    			for (Job otherJob : jobBuffer) {
+	    				if (currentJob.equals(otherJob)) {
+	    					break;
+	    				} else if (currentJob.isEquivalent(otherJob, JobType.CREATE)) {
+	    					System.out.println("Found a job to remove.");
+	    					jobBuffer.remove(currentJob);
+	    				}
+	    			}
+	    		}
+			}
+		}
+		
+		for (Job job : jobBuffer) {
+			JobManager.getInstance().enqueue(client, job);
+		}
+	}
+
+
+	/**
      * Process all events for keys queued to the watcher
      */
     void processEvents() {
@@ -158,7 +194,8 @@ public class DirectoryListener {
                 System.err.println("WatchKey not recognized!!");
                 continue;
             }
-
+            
+            jobBuffer.clear();
             for (WatchEvent<?> event: key.pollEvents()) {
                 Kind<?> kind = event.kind();
 
@@ -175,16 +212,18 @@ public class DirectoryListener {
                 if (kind == ENTRY_CREATE) {
                 	create(child);
                 	continue;
+                	
                 } else if (kind == ENTRY_DELETE) {
                 	delete(child);
                 	continue;
+                	
                 } else if (kind == ENTRY_MODIFY) {
                 	modify(child);
                 	continue;
                 }
                 
                 
-                // if directory is created, and watching recursively, then
+                // If directory is created, and watching recursively, then
                 // register it and its sub-directories
                 if (recursive && (kind == ENTRY_CREATE)) {
                     try {
@@ -192,29 +231,32 @@ public class DirectoryListener {
                             registerAll(child);
                         }
                     } catch (IOException x) {
-                        // ignore to keep sample readable
+                        
                     }
                 }
             }
-
-            // reset key and remove from set if directory no longer accessible
+            finishedEventBatch();
+            
+            // Reset key and remove from set if directory no longer accessible
             boolean valid = key.reset();
             if (!valid) {
                 keys.remove(key);
 
-                // all directories are inaccessible
+                // All directories are inaccessible
                 if (keys.isEmpty()) {
                     break;
                 }
             }
         }
     }
-
+    
+    
     static void usage() {
         System.err.println("usage: java WatchDir [-r] dir");
         System.exit(-1);
     }
 
+    
     public static void main(String[] args) throws IOException {
         boolean recursive = true;
 
@@ -222,6 +264,7 @@ public class DirectoryListener {
         Path dir = Paths.get("server");
         // new WatchDir(dir, recursive).processEvents();
     }
+    
     
     public static void main2(String[] args) throws IOException {
         // parse arguments

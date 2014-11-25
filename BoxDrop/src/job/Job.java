@@ -6,6 +6,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 
+import client.AbstractClient;
+
 public class Job implements Serializable {
 	/**
 	 * 
@@ -75,7 +77,35 @@ public class Job implements Serializable {
 		toSend = true;
 	}
 	
+	
+	public boolean isEquivalent(Job other, JobType type) {
+		return filename.equals(other.filename)
+				&& lastModified == other.lastModified
+				&& other.getType().equals(type);
+	}
+	
+	
+	@Override
 	public String toString() {
 		return(type + ": " + filename + " @ " + lastModified);
+	}
+	
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (!(obj instanceof Job))
+			return false;
+		
+		Job other = (Job) obj;
+		
+		return jobTime == other.jobTime
+				&& filename.equals(other.filename)
+				&& lastModified == other.lastModified
+				&& type.equals(other.type)
+				&& toSend == other.toSend;
 	}
 }

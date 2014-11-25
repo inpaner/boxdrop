@@ -44,7 +44,8 @@ public class JobManager {
 	
 	
 	public Job newModify(Path path) {
-		return constructJob(JobType.MODIFY, path);
+		// Same as Create. Maybe.
+		return constructJob(JobType.CREATE, path);
 	}
 	
 	
@@ -116,18 +117,25 @@ public class JobManager {
 	
 	
 	protected synchronized boolean handleCreate(AbstractClient client, Job job) {
-		// check if exists
+		// Ignore job if file exists and is either newer or have same last modified.
+		// Same last modified is a VERY LOOSE assumption that they are the same file.
+		// Else, do MD5.
 		Path toCreate = getLocalizedFile(job);
-		if (Files.exists(toCreate)) {
+		try {
+			if (Files.exists(toCreate) 
+					&& Files.getLastModifiedTime(toCreate).compareTo( FileTime.fromMillis(job.getLastModified()) ) >= 0) {
+				return false;
+			}
+		} catch (IOException ex) {
+			ex.printStackTrace();
 			return false;
 		}
 		
-		
-		// if not, send request
+		// If doesn't exist or is older, send request
 		Job request = newRequest(job);
 		client.sendJob(request);
 		
-		// get file from opposite end
+		// Get file from opposite end
 		try {
 			FileOutputStream outputStream = new FileOutputStream( toCreate.toFile() );
 			
@@ -151,6 +159,7 @@ public class JobManager {
 			Files.setLastModifiedTime( toCreate, FileTime.fromMillis(job.getLastModified()) );
 			System.out.println("Created new file: " + job.getFilename());
 			outputStream.close();
+			
 		} catch (IOException e) {
 			// TODO handle death
 			e.printStackTrace();
@@ -158,21 +167,23 @@ public class JobManager {
 		} 
 		
 		return true;
-
 	}
 	
 	
-	protected synchronized void handleDelete(AbstractClient client, Job job) {
+	protected synchronized boolean handleDelete(AbstractClient client, Job job) {
 		Path file = getLocalizedFile(job);
+		boolean success = false;
 		try {
-			Files.deleteIfExists(file);
+			success = Files.deleteIfExists(file);
 		} catch (IOException e) {
 			System.out.println("Error deleting.");
-			e.printStackTrace();
+			success = false;
 		}
+		
+		return success;
 	}
 	
-	protected synchronized void handleRequest(AbstractClient client, Job job) {
+	protected synchronized boolean handleRequest(AbstractClient client, Job job) {
 		// No existence checks since we are the ones who sent the initial job
 		try {
 			System.out.println("Handling request.");
@@ -185,7 +196,7 @@ public class JobManager {
 			byte[] buffer = new byte[BUFFER_SIZE];
             
 			int bytesRead;
-			System.out.println("Sending. ");
+			System.out.println("Sending.");
             while((bytesRead = inputStream.read(buffer)) != -1){
             	Util.print(buffer);
             	dos.write(buffer, 0, bytesRead);
@@ -196,15 +207,17 @@ public class JobManager {
 			dos.write(Constants.EOF, 0, Constants.EOF.length);
 			dos.flush();
 			inputStream.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (IOException ex) {
+			ex.printStackTrace();
+			return false;
 		}
+		
+		return true;
 	}
 	
 	
 	private synchronized Job constructJob(JobType type, Path path) {
-		// remove top level folder from filename
+		// Remove top level folder from filename
 		String filename = path.subpath(1, path.getNameCount()).toString();
 		
 		long lastModified = 0;
@@ -217,7 +230,6 @@ public class JobManager {
 			ex.printStackTrace();
 			return null;
 		}
-		
 		
 		return new Job(type, filename, lastModified);
 	}

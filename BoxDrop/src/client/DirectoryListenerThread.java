@@ -4,10 +4,10 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 
-public class FileListenerThread implements Runnable {
+public class DirectoryListenerThread implements Runnable {
 	private Client client;
 	
-	public FileListenerThread(Client client) {
+	public DirectoryListenerThread(Client client) {
 		this.client = client;
 	}
 
