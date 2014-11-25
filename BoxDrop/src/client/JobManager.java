@@ -23,7 +23,7 @@ import commons.JobType;
 import commons.Util;
 
 public class JobManager {
-	private static JobManager instance = new JobManager(); 
+	protected static JobManager instance = new JobManager(); 
 	private final int BUFFER_SIZE = 32768;
 	
 	public static JobManager getInstance() {
@@ -70,6 +70,7 @@ public class JobManager {
 	
 	protected synchronized void handleCreate(AbstractClient client, Job job) {
 		// check if exists
+		
 		
 		// if not, send request
 		Job request = newRequest(job);
@@ -121,7 +122,7 @@ public class JobManager {
 	}
 	
 	
-	private synchronized void handleDelete(AbstractClient client, Job job) {
+	protected synchronized void handleDelete(AbstractClient client, Job job) {
 		Path file = getLocalizedFile(job);
 		try {
 			Files.deleteIfExists(file);
@@ -131,12 +132,8 @@ public class JobManager {
 		}
 	}
 	
-	private Path getLocalizedFile(Job job) {
-		return Paths.get(folder.toString(), job.getFilename());
-	}
-	
-	private synchronized void handleRequest(AbstractClient client, Job job) {
-		// No more checks since we are the ones who sent the initial job
+	protected synchronized void handleRequest(AbstractClient client, Job job) {
+		// No existence checks since we are the ones who sent the initial job
 		try {
 			System.out.println("Handling request.");
 			Path requestedFile = getLocalizedFile(job);
@@ -167,10 +164,8 @@ public class JobManager {
 	
 	
 	private synchronized Job constructJob(JobType type, Path path) {
-		
 		// remove top level folder from filename
 		String filename = path.subpath(1, path.getNameCount()).toString();
-		
 		
 		long lastModified = 0;
 		try {
@@ -185,6 +180,11 @@ public class JobManager {
 		
 		
 		return new Job(type, filename, lastModified);
+	}
+
+
+	private Path getLocalizedFile(Job job) {
+		return Paths.get(folder.toString(), job.getFilename());
 	}
 	
 	
