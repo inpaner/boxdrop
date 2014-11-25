@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileTime;
 import java.util.Arrays;
 
 import server.ClientProxy;
@@ -75,11 +76,11 @@ public class JobManager {
 		client.sendJob(request);
 		System.out.println("Sent request job: " + request);
 		
-		// transfer file
+		// get file from opposite end
 		try {
-			String filename = Paths.get(folder.toString(), job.getFilename()).toString();
-			File destination = new File(filename);
-			FileOutputStream outputStream = new FileOutputStream( destination );
+			
+			Path receivedFile = getLocalizedFile(job);
+			FileOutputStream outputStream = new FileOutputStream( receivedFile.toFile() );
 			
 			int read = 0;
 			byte[] buffer = new byte[BUFFER_SIZE];
@@ -107,6 +108,8 @@ public class JobManager {
 				
 				outputStream.write(buffer, 0, read);  
 			}
+			
+			Files.setLastModifiedTime( receivedFile, FileTime.fromMillis(job.getLastModified()) );
 			System.out.println("Created new file: " + job.getFilename());
 			outputStream.close();
 		} catch (IOException e) {
@@ -136,9 +139,8 @@ public class JobManager {
 		// No more checks since we are the ones who sent the initial job
 		try {
 			System.out.println("Handling request.");
-			Path file = getLocalizedFile(job);
-			FileInputStream requestedFile = new FileInputStream(file.toString());
-			
+			Path requestedFile = getLocalizedFile(job);
+			FileInputStream inputStream = new FileInputStream(requestedFile.toString());
 			OutputStream outputStream = client.getSocket().getOutputStream();
 			outputStream.flush();
 			DataOutputStream dos = new DataOutputStream(outputStream);
@@ -147,15 +149,16 @@ public class JobManager {
             
 			int bytesRead;
 			System.out.println("Sending: ");
-            while((bytesRead = requestedFile.read(buffer)) != -1){
+            while((bytesRead = inputStream.read(buffer)) != -1){
             	dos.write(buffer, 0, bytesRead);
             }
 			
 			System.out.println("File sent.");
 			
+			
 			dos.write(Constants.EOF, 0, Constants.EOF.length);
 			dos.flush();
-			requestedFile.close();
+			inputStream.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
