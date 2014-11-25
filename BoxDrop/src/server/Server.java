@@ -12,7 +12,7 @@ public class Server {
 	static Path FOLDER;
 	private ServerSocket serverSocket;
 	
-	public Server() {
+	public Server(Path path) {
 		FOLDER = Paths.get("server");
 		
 		ServerJobManager.getInstance().setFolder(FOLDER);

@@ -2,11 +2,14 @@ package job;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -141,10 +144,22 @@ public class JobManager {
 
 
 	protected synchronized boolean handleReceiveCreate(AbstractClient client, Job job) {
-		// Ignore job if file exists and is newer or 
+		Path toCreate = getLocalizedFile(job);
+		
+		// Creates a folder
+		if (job.isDirectory()) {
+			try {
+				Files.createDirectory(toCreate);
+				sendDone(client);
+				return true;
+			} catch (IOException ex) {
+				// FileAlreadyExistsException. Technically folder.
+			}
+		}
+		
+		// Ignore job if file exists and is newer or has same contents.
 		// Same last modified is a VERY LOOSE assumption that they are the same file.
 		// Else, do MD5.
-		Path toCreate = getLocalizedFile(job);
 		try {
 			if (Files.exists(toCreate) 
 					&& (Files.getLastModifiedTime(toCreate).compareTo(FileTime.fromMillis(job.getLastModified()))) >= 0 
@@ -187,10 +202,13 @@ public class JobManager {
 			System.out.println("Created new file: " + job.getFilename());
 			outputStream.close();
 			
-		} catch (IOException e) {
-			// something went terribly, horribly wrong
-			// TODO clean up new file
-			e.printStackTrace();
+		} catch (IOException ex) {
+			try {
+				Files.delete(toCreate);
+			} catch (IOException ex1) {
+				// something went terribly, horribly wrong
+				ex1.printStackTrace();
+			}
 			sendDone(client);
 			return false;
 		} 
@@ -199,17 +217,40 @@ public class JobManager {
 		return true;
 	}
 	
+	/**
+	 * {@link http://stackoverflow.com/a/4026761/2247074}
+	 * @throws FileNotFoundException 
+	 */
+	private synchronized boolean deleteRecursive(File path) throws FileNotFoundException {
+        if (!path.exists()) throw new FileNotFoundException(path.getAbsolutePath());
+        boolean ret = true;
+        if (path.isDirectory()) {
+            for (File f : path.listFiles()){
+                ret = ret && deleteRecursive(f);
+            }
+        }
+        return ret && path.delete();
+	}
+	
 	
 	protected synchronized boolean handleReceiveDelete(AbstractClient client, Job job) {
-		Path file = getLocalizedFile(job);
+		Path toDelete = getLocalizedFile(job);
 		boolean success = false;
-		try {
-			success = Files.deleteIfExists(file);
-		} catch (IOException e) {
-			System.out.println("Error deleting.");
-			success = false;
-		}
 		
+		if (job.isDirectory()) {
+			try {
+				success = deleteRecursive(toDelete.toFile());
+			} catch (FileNotFoundException e) {
+				System.out.println("Error deleting.");
+			}
+			
+		} else {
+			try {
+				success = Files.deleteIfExists(toDelete);
+			} catch (IOException e) {
+				System.out.println("Error deleting.");
+			}
+		}
 		return success;
 	}
 	
@@ -262,6 +303,7 @@ public class JobManager {
 
 	private synchronized Job constructJob(JobType type, Path path) {
 		try {
+			boolean isDirectory = Files.isDirectory(path);
 			byte[] checksum = Util.getChecksum(path.toString());
 			long lastModified = 0;
 			
@@ -270,7 +312,12 @@ public class JobManager {
 			if (type != JobType.DELETE) {
 				lastModified = Files.getLastModifiedTime(path).toMillis();
 			}
-			return new Job(type, filename, lastModified, checksum);
+			Job job = new Job(type, filename, lastModified, checksum);
+			if (isDirectory) {
+				job.setAsDirectory();
+			}
+			
+			return job;
 
 		} catch (IOException ex) {
 			System.out.println("Error accessing file while creating Job.");

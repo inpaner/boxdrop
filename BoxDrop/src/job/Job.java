@@ -17,6 +17,7 @@ public class Job implements Serializable, Comparable<Job> {
 	private ArrayList<String> filenames;
 	private long lastModified = 0;
 	private JobType type;
+	private boolean isDirectory = false;
 	private boolean toSend = true;
 	private byte[] checksum;
 	
@@ -76,6 +77,14 @@ public class Job implements Serializable, Comparable<Job> {
 		toSend = true;
 	}
 	
+	
+	public boolean isDirectory() {
+		return isDirectory;
+	}
+	
+	public void setAsDirectory() {
+		isDirectory = true;
+	}
 	
 	public byte[] getChecksum() {
 		return checksum;
