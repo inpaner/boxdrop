@@ -3,7 +3,8 @@ package client;
 import java.net.Socket;
 import java.nio.file.Path;
 
-import commons.AbstractClient;
+import job.JobListenerThread;
+import job.JobManager;
 
 public class Client extends AbstractClient {
 	private Path folder;

@@ -1,11 +1,10 @@
-package client;
+package job;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 
-import commons.AbstractClient;
-import commons.Job;
+import client.AbstractClient;
 
 public class JobListenerThread implements Runnable {
 	private AbstractClient client;

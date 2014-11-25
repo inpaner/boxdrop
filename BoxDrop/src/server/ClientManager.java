@@ -4,9 +4,9 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
-import client.JobManager;
-import commons.AbstractClient;
-import commons.Job;
+import client.AbstractClient;
+import job.Job;
+import job.JobManager;
 
 public class ClientManager {
 	private static ClientManager instance = new ClientManager();

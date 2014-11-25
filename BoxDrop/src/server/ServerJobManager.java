@@ -1,8 +1,8 @@
 package server;
 
-import commons.AbstractClient;
-import commons.Job;
-import client.JobManager;
+import client.AbstractClient;
+import job.Job;
+import job.JobManager;
 
 public class ServerJobManager extends JobManager {
 	

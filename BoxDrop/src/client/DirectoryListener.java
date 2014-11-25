@@ -41,8 +41,9 @@ import java.nio.file.attribute.*;
 import java.io.*;
 import java.util.*;
 
-import commons.Job;
-import commons.JobType;
+import job.Job;
+import job.JobManager;
+import job.JobType;
 
 /**
  * Class for watching a directory (or tree) for changes to files. 

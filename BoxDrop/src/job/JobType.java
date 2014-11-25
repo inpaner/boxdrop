@@ -1,4 +1,4 @@
-package commons;
+package job;
 
 public enum JobType {
 	CREATE("Create"), MODIFY("Modify"), DELETE("Delete"), REQUEST("Request"), LIST("List");

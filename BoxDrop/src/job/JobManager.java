@@ -1,4 +1,4 @@
-package client;
+package job;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -16,12 +16,10 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import client.AbstractClient;
 import server.ClientProxy;
 import server.Server;
-import commons.AbstractClient;
 import commons.Constants;
-import commons.Job;
-import commons.JobType;
 import commons.Util;
 
 public class JobManager {

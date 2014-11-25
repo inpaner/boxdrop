@@ -1,9 +1,11 @@
-package commons;
+package client;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+
+import job.Job;
 
 public abstract class AbstractClient {
 	Socket socket;
