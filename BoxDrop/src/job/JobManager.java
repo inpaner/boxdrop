@@ -23,9 +23,12 @@ import commons.Constants;
 import commons.Util;
 
 public class JobManager {
-	protected static JobManager instance = new JobManager(); 
 	private final int BUFFER_SIZE = 32768;
-	
+	protected static JobManager instance = new JobManager(); 
+	private volatile boolean isDone = true;
+	private ArrayList<JobStruct> jobs = new ArrayList<>();
+	private JobStruct currentJob = null;
+
 	public static JobManager getInstance() {
 		return instance;
 	}
@@ -59,39 +62,16 @@ public class JobManager {
 	}
 	
 	
-	private ArrayList<JobStruct> jobs = new ArrayList<>(); 
-	private JobStruct currentJob = null;
-	
-	public synchronized void enqueue(AbstractClient client, Job job) {
-		// TODO order by job time creation method
-		
-		JobStruct jobstruct = new JobStruct(client, job);
-		if (currentJob == null) {
-			handle(jobstruct);
-		} else {
-			jobs.add(jobstruct);
-			System.out.println("Jobs: " + jobs.size());
-		}
-	}
-	
-	
-	private class JobStruct {
-		Job job;
-		AbstractClient client;
-		JobStruct(AbstractClient client, Job job) {
-			this.client = client;
-			this.job = job;
-		}
-	}
-	
-	
-	public synchronized void handle(JobStruct jobstruct) {
+	private synchronized void delegateJob(JobStruct jobstruct) {
 		AbstractClient client = jobstruct.client; 
 		Job job = jobstruct.job;
 		
 		if (job.isForSending()) {
+			if (job.getType().equals(JobType.CREATE)) {
+				System.out.println("Setting to not Done.");
+				isDone = false;
+			}
 			client.sendJob(job);
-			
 		} else if (job.getType().equals(JobType.CREATE)) {
 			handleCreate(client, job);
 			
@@ -109,24 +89,60 @@ public class JobManager {
 	public synchronized void finishJob() {
 		if (jobs.isEmpty()) {
 			currentJob = null;
-		} else {
-			JobStruct nextJob = jobs.get(0);
-			handle(nextJob);
+		} else if (isDone) {
+			JobStruct nextJob = jobs.remove(0);
+			delegateJob(nextJob);
 		}
 	}
 	
 	
+	private void sendDone(AbstractClient client) {
+		handle(client, new Job());
+	}
+	
+	
+	public synchronized void handle(AbstractClient client, Job job) {
+		JobStruct jobstruct = new JobStruct(client, job);
+		
+		// Bypass queue for Requests and Done jobs
+		if (job.getType().equals(JobType.REQUEST)) {
+			currentJob = jobstruct;
+			handleRequest(client, job);
+			currentJob = null;
+			return;
+		} else if (job.getType().equals(JobType.DONE)) {
+			currentJob = jobstruct;
+			handleDone(client, job);
+			currentJob = null;
+			return;
+		}
+		
+		
+		// TODO order by job time creation method
+		System.out.println((currentJob == null)+","+isDone);
+		if (currentJob == null && isDone) {
+			currentJob = jobstruct;
+			System.out.println("First job.");
+			delegateJob(jobstruct);
+		} else {
+			System.out.println("Enqueuing: " + job);
+			jobs.add(jobstruct);
+			System.out.println("Jobs: " + jobs.size());
+		}
+	}
+
+
 	protected synchronized boolean handleCreate(AbstractClient client, Job job) {
 		// Ignore job if file exists and is either newer or have same last modified.
 		// Same last modified is a VERY LOOSE assumption that they are the same file.
 		// Else, do MD5.
 		Path toCreate = getLocalizedFile(job);
 		try {
-			if (Files.exists(toCreate) 
-					&& Files.getLastModifiedTime(toCreate).compareTo( FileTime.fromMillis(job.getLastModified()) ) >= 0) {
+			if (Files.exists(toCreate)) {
+				sendDone(client);
 				return false;
 			}
-		} catch (IOException ex) {
+		} catch (Exception ex) {
 			ex.printStackTrace();
 			return false;
 		}
@@ -160,12 +176,18 @@ public class JobManager {
 			System.out.println("Created new file: " + job.getFilename());
 			outputStream.close();
 			
+			
+			
 		} catch (IOException e) {
-			// TODO handle death
+			// something went terribly, horribly wrong
+			// TODO clean up new file
 			e.printStackTrace();
+			sendDone(client);
 			return false;
 		} 
 		
+		
+		sendDone(client);
 		return true;
 	}
 	
@@ -184,6 +206,11 @@ public class JobManager {
 	}
 	
 	protected synchronized boolean handleRequest(AbstractClient client, Job job) {
+		if (job.isForSending()) {
+			client.sendJob(job);
+			return true;
+		}
+		
 		// No existence checks since we are the ones who sent the initial job
 		try {
 			System.out.println("Handling request.");
@@ -216,6 +243,16 @@ public class JobManager {
 	}
 	
 	
+	private synchronized void handleDone(AbstractClient client, Job job) {
+		if (job.isForSending()) {
+			client.sendJob(job);
+		} else { // received
+			isDone = true;
+			finishJob();
+		}
+	}
+
+
 	private synchronized Job constructJob(JobType type, Path path) {
 		// Remove top level folder from filename
 		String filename = path.subpath(1, path.getNameCount()).toString();
@@ -237,6 +274,16 @@ public class JobManager {
 
 	private Path getLocalizedFile(Job job) {
 		return Paths.get(folder.toString(), job.getFilename());
+	}
+
+
+	private class JobStruct {
+		Job job;
+		AbstractClient client;
+		JobStruct(AbstractClient client, Job job) {
+			this.client = client;
+			this.job = job;
+		}
 	}
 	
 	

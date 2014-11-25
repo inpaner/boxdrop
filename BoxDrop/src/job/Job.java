@@ -13,15 +13,15 @@ public class Job implements Serializable {
 	 * 
 	 */
 	private static final long serialVersionUID = -738155227715836990L;
-	private long jobTime;
+	private final long jobTime = System.currentTimeMillis();
 	private String filename;
-	private ArrayList<String> filenames = null;
-	private long lastModified;
+	private ArrayList<String> filenames;
+	private long lastModified = 0;
 	private JobType type;
 	private boolean toSend = true;
 	
+	
 	public Job(Path path, JobType type) {
-		jobTime = System.currentTimeMillis();
 		filename = path.toString();
 		try {
 			lastModified = Files.getLastModifiedTime(path).toMillis();
@@ -32,15 +32,24 @@ public class Job implements Serializable {
 		
 		this.type = type;
 	}
-
 	
+	
+	/**
+	 * Constructor for Done Job.
+	 */
+	public Job() {
+		type = JobType.DONE;
+	}
+
+
 	public Job(JobType type, String filename, long lastModified) {
 		this.type = type;
 		this.filename = filename;
 		this.lastModified = lastModified;
+		
 	}
 
-
+	
 	public long getJobTime() {
 		return jobTime;
 	}

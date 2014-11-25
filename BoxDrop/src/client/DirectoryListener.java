@@ -144,6 +144,11 @@ public class DirectoryListener {
     private List<Job> jobBuffer = new ArrayList<>();
     
     private void finishedEventBatch() {
+    	for (Job job : jobBuffer) {
+			JobManager.getInstance().handle(client, job);
+		}
+    	
+    	/*
     	System.out.println("Job Buffer: " + jobBuffer.size());
 		boolean hasChanges = true;
 		while (hasChanges) {
@@ -173,6 +178,7 @@ public class DirectoryListener {
 		for (Job job : jobBuffer) {
 			JobManager.getInstance().enqueue(client, job);
 		}
+		*/
 	}
 
 

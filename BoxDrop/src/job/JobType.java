@@ -1,7 +1,7 @@
 package job;
 
 public enum JobType {
-	CREATE("Create"), MODIFY("Modify"), DELETE("Delete"), REQUEST("Request"), LIST("List");
+	CREATE("Create"), MODIFY("Modify"), DELETE("Delete"), REQUEST("Request"), LIST("List"), DONE("Done");
 	
 	String name;
 	

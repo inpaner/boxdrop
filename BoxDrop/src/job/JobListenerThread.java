@@ -26,7 +26,7 @@ public class JobListenerThread implements Runnable {
 				final Job job = (Job) objectInput.readObject();
 				job.setAsReceived();
 				System.out.println("[RECEIVED JOB] " + job);
-				jobmanager.enqueue(client, job);
+				jobmanager.handle(client, job);
 			} catch (IOException ex) {
 				// TODO finish socket in client manager
 				System.out.println("Connection problem with " + client.getSocket().getRemoteSocketAddress() +". Closing socket.");
