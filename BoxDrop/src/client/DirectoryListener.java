@@ -52,7 +52,7 @@ import job.JobManager;
 public class DirectoryListener {
     private final WatchService watcher;
     private final Map<WatchKey,Path> keys;
-    private final boolean recursive;
+    private final boolean recursive = true;
     private boolean trace = false;
     private Client client;
     
@@ -102,13 +102,12 @@ public class DirectoryListener {
     /**
      * Creates a WatchService and registers the given directory
      */
-    DirectoryListener(Client client, boolean recursive) throws IOException {
+    DirectoryListener(Client client) throws IOException {
     	this.client = client;
     	Path dir = client.getFolder();
         this.watcher = FileSystems.getDefault().newWatchService();
         this.keys = new HashMap<WatchKey,Path>();
-        this.recursive = recursive;
-
+        
         if (recursive) {
             System.out.format("Scanning %s ...\n", dir);
             registerAll(dir);
@@ -130,7 +129,8 @@ public class DirectoryListener {
     
     private void modify(Path path) {
     	Job job = JobManager.getInstance().newModify(path);
-    	jobBuffer.add(job);
+    	if (job != null) 
+    		jobBuffer.add(job);
     }
     
     
@@ -146,8 +146,6 @@ public class DirectoryListener {
     	for (Job job : jobBuffer) {
 			JobManager.getInstance().handle(client, job);
 		}
-    	
-
 	}
 
 
@@ -184,18 +182,6 @@ public class DirectoryListener {
                 Path name = ev.context();
                 Path child = dir.resolve(name);
 
-                if (kind == ENTRY_CREATE) {
-                	create(child);
-                	continue;
-                	
-                } else if (kind == ENTRY_DELETE) {
-                	delete(child);
-                	continue;
-                	
-                } else if (kind == ENTRY_MODIFY) {
-                	modify(child);
-                	continue;
-                }
                 
                 
                 // If directory is created, and watching recursively, then
@@ -208,6 +194,19 @@ public class DirectoryListener {
                     } catch (IOException x) {
                         
                     }
+                }
+                
+                if (kind == ENTRY_CREATE) {
+                	create(child);
+                	continue;
+                	
+                } else if (kind == ENTRY_DELETE) {
+                	delete(child);
+                	continue;
+                	
+                } else if (kind == ENTRY_MODIFY) {
+                	modify(child);
+                	continue;
                 }
             }
             finishedEventBatch();

@@ -13,7 +13,7 @@ public class DirectoryListenerThread implements Runnable {
 	@Override
 	public void run() {
 		try {
-			new DirectoryListener(client, true).processEvents();
+			new DirectoryListener(client).processEvents();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
