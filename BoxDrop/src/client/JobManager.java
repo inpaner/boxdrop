@@ -62,6 +62,8 @@ public class JobManager {
 			handleCreate(client, job);
 		} else if (job.getType().equals(JobType.REQUEST)) {
 			handleRequest(client, job);
+		} else if (job.getType().equals(JobType.DELETE)) {
+			handleDelete(client, job);
 		}
 	}
 	
@@ -116,12 +118,26 @@ public class JobManager {
 	}
 	
 	
+	private synchronized void handleDelete(AbstractClient client, Job job) {
+		Path file = getLocalizedFile(job);
+		try {
+			Files.deleteIfExists(file);
+		} catch (IOException e) {
+			System.out.println("Error deleting.");
+			e.printStackTrace();
+		}
+	}
+	
+	private Path getLocalizedFile(Job job) {
+		return Paths.get(folder.toString(), job.getFilename());
+	}
+	
 	private synchronized void handleRequest(AbstractClient client, Job job) {
 		// No more checks since we are the ones who sent the initial job
 		try {
 			System.out.println("Handling request.");
-			Path filename = Paths.get(folder.toString(), job.getFilename());
-			FileInputStream requestedFile = new FileInputStream(filename.toString());
+			Path file = getLocalizedFile(job);
+			FileInputStream requestedFile = new FileInputStream(file.toString());
 			
 			OutputStream outputStream = client.getSocket().getOutputStream();
 			outputStream.flush();

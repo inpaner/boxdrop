@@ -23,9 +23,18 @@ public class JobListenerThread implements Runnable {
 				System.out.println("Listening for job requests from " + client.getSocket().getRemoteSocketAddress());
 				InputStream inputStream = client.getSocket().getInputStream();
 				ObjectInputStream objectInput = new ObjectInputStream(inputStream);
-				Job job = (Job) objectInput.readObject();
+				final Job job = (Job) objectInput.readObject();
 				System.out.println("Received job: " + job);
 				jobmanager.handle(client, job);
+				
+				/*
+				new Thread( new Runnable() {
+					@Override
+					public void run() {
+						jobmanager.handle(client, job);
+					}
+				}).start();
+				*/
 				
 			} catch (IOException ex) {
 				// TODO finish socket in client manager
