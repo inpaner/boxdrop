@@ -6,7 +6,6 @@ import java.util.List;
 
 import client.AbstractClient;
 import job.Job;
-import job.JobManager;
 
 public class ClientManager {
 	private static ClientManager instance = new ClientManager();

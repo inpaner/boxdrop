@@ -1,14 +1,13 @@
 package job;
 
-import java.io.IOException;
 import java.io.Serializable;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 
-import client.AbstractClient;
+import commons.Util;
 
-public class Job implements Serializable {
+public class Job implements Serializable, Comparable<Job> {
 	/**
 	 * 
 	 */
@@ -19,21 +18,9 @@ public class Job implements Serializable {
 	private long lastModified = 0;
 	private JobType type;
 	private boolean toSend = true;
+	private byte[] checksum;
 	
-	
-	public Job(Path path, JobType type) {
-		filename = path.toString();
-		try {
-			lastModified = Files.getLastModifiedTime(path).toMillis();
-		} catch (IOException ex) {
-			System.out.println("Error accessing file while creating Job.");
-			ex.printStackTrace();
-		}
-		
-		this.type = type;
-	}
-	
-	
+
 	/**
 	 * Constructor for Done Job.
 	 */
@@ -42,11 +29,11 @@ public class Job implements Serializable {
 	}
 
 
-	public Job(JobType type, String filename, long lastModified) {
+	public Job(JobType type, String filename, long lastModified, byte[] checksum) {
 		this.type = type;
 		this.filename = filename;
 		this.lastModified = lastModified;
-		
+		this.checksum = checksum;
 	}
 
 	
@@ -74,16 +61,24 @@ public class Job implements Serializable {
 		return type;
 	}
 	
+	
 	public boolean isForSending() {
 		return toSend;
 	}
+	
 	
 	public void setAsReceived() {
 		toSend = false;
 	}
 	
+	
 	public void setForSending() {
 		toSend = true;
+	}
+	
+	
+	public byte[] getChecksum() {
+		return checksum;
 	}
 	
 	
@@ -116,5 +111,26 @@ public class Job implements Serializable {
 				&& lastModified == other.lastModified
 				&& type.equals(other.type)
 				&& toSend == other.toSend;
+	}
+
+
+	public boolean hasSameContents(Path toCreate) {
+		boolean hasSame = false;
+		byte[] otherChecksum = Util.getChecksum(toCreate.toString());
+		hasSame = Arrays.equals(checksum, otherChecksum);
+		System.out.println("Checksum same: " + hasSame);
+		return hasSame;
+	}
+
+
+	@Override
+	public int compareTo(Job other) {
+		int comparison = 0;
+		if (lastModified > other.lastModified) {
+			comparison = 1;
+		} else if (lastModified < other.lastModified) {
+			comparison = -1;
+		}
+		return comparison;
 	}
 }

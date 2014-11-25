@@ -17,8 +17,8 @@ public class ServerJobManager extends JobManager {
 	
 	
 	@Override
-	protected synchronized boolean handleCreate(AbstractClient client, Job job) {
-		boolean success = super.handleCreate(client, job);
+	protected synchronized boolean handleReceiveCreate(AbstractClient client, Job job) {
+		boolean success = super.handleReceiveCreate(client, job);
 		
 		if (success) {
 			ClientManager.getInstance().broadcast(client, job);
@@ -29,8 +29,8 @@ public class ServerJobManager extends JobManager {
 	
 	
 	@Override
-	protected synchronized boolean handleDelete(AbstractClient client, Job job) {
-		boolean success = super.handleDelete(client, job);
+	protected synchronized boolean handleReceiveDelete(AbstractClient client, Job job) {
+		boolean success = super.handleReceiveDelete(client, job);
 		
 		if (success) {
 			ClientManager.getInstance().broadcast(client, job);

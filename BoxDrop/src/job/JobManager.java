@@ -2,7 +2,6 @@ package job;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -12,13 +11,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 
 import client.AbstractClient;
-import server.ClientProxy;
-import server.Server;
 import commons.Constants;
 import commons.Util;
 
@@ -27,10 +25,20 @@ public class JobManager {
 	protected static JobManager instance = new JobManager(); 
 	private volatile boolean isDone = true;
 	private ArrayList<JobStruct> jobs = new ArrayList<>();
+	Comparator<JobStruct> jobstructComparator;
 	private JobStruct currentJob = null;
 
 	public static JobManager getInstance() {
 		return instance;
+	}
+	
+	protected JobManager() {
+		 jobstructComparator = new Comparator<JobStruct>() {
+			@Override
+			public int compare(JobStruct o1, JobStruct o2) {
+				return o1.job.compareTo(o2.job);
+			}
+		};
 	}
 	
 	private Path folder;
@@ -57,8 +65,8 @@ public class JobManager {
 	}
 	
 	
-	public Job newRequest(Job job) {
-		return new Job(JobType.REQUEST, job.getFilename(), job.getLastModified());
+	public Job newRequest(Job job) { 
+		return new Job(JobType.REQUEST, job.getFilename(), job.getLastModified(), job.getChecksum());
 	}
 	
 	
@@ -73,13 +81,13 @@ public class JobManager {
 			}
 			client.sendJob(job);
 		} else if (job.getType().equals(JobType.CREATE)) {
-			handleCreate(client, job);
+			handleReceiveCreate(client, job);
 			
 		} else if (job.getType().equals(JobType.REQUEST)) {
-			handleRequest(client, job);
+			handleReceiveRequest(client, job);
 			
 		} else if (job.getType().equals(JobType.DELETE)) {
-			handleDelete(client, job);
+			handleReceiveDelete(client, job);
 		}
 		
 		finishJob();
@@ -107,7 +115,7 @@ public class JobManager {
 		// Bypass queue for Requests and Done jobs
 		if (job.getType().equals(JobType.REQUEST)) {
 			currentJob = jobstruct;
-			handleRequest(client, job);
+			handleReceiveRequest(client, job);
 			currentJob = null;
 			return;
 		} else if (job.getType().equals(JobType.DONE)) {
@@ -117,9 +125,8 @@ public class JobManager {
 			return;
 		}
 		
-		
 		// TODO order by job time creation method
-		System.out.println((currentJob == null)+","+isDone);
+		// System.out.println((currentJob == null)+","+isDone);
 		if (currentJob == null && isDone) {
 			currentJob = jobstruct;
 			System.out.println("First job.");
@@ -127,18 +134,22 @@ public class JobManager {
 		} else {
 			System.out.println("Enqueuing: " + job);
 			jobs.add(jobstruct);
+			Collections.sort(jobs, jobstructComparator);
 			System.out.println("Jobs: " + jobs.size());
 		}
 	}
 
 
-	protected synchronized boolean handleCreate(AbstractClient client, Job job) {
-		// Ignore job if file exists and is either newer or have same last modified.
+	protected synchronized boolean handleReceiveCreate(AbstractClient client, Job job) {
+		// Ignore job if file exists and is newer or 
 		// Same last modified is a VERY LOOSE assumption that they are the same file.
 		// Else, do MD5.
 		Path toCreate = getLocalizedFile(job);
 		try {
-			if (Files.exists(toCreate)) {
+			if (Files.exists(toCreate) 
+					&& (Files.getLastModifiedTime(toCreate).compareTo(FileTime.fromMillis(job.getLastModified()))) >= 0 
+					|| job.hasSameContents(toCreate) ) {
+				System.out.println("Denying creation of same or more recent file.");
 				sendDone(client);
 				return false;
 			}
@@ -176,8 +187,6 @@ public class JobManager {
 			System.out.println("Created new file: " + job.getFilename());
 			outputStream.close();
 			
-			
-			
 		} catch (IOException e) {
 			// something went terribly, horribly wrong
 			// TODO clean up new file
@@ -186,13 +195,12 @@ public class JobManager {
 			return false;
 		} 
 		
-		
 		sendDone(client);
 		return true;
 	}
 	
 	
-	protected synchronized boolean handleDelete(AbstractClient client, Job job) {
+	protected synchronized boolean handleReceiveDelete(AbstractClient client, Job job) {
 		Path file = getLocalizedFile(job);
 		boolean success = false;
 		try {
@@ -205,7 +213,8 @@ public class JobManager {
 		return success;
 	}
 	
-	protected synchronized boolean handleRequest(AbstractClient client, Job job) {
+	
+	protected synchronized boolean handleReceiveRequest(AbstractClient client, Job job) {
 		if (job.isForSending()) {
 			client.sendJob(job);
 			return true;
@@ -213,7 +222,6 @@ public class JobManager {
 		
 		// No existence checks since we are the ones who sent the initial job
 		try {
-			System.out.println("Handling request.");
 			Path requestedFile = getLocalizedFile(job);
 			FileInputStream inputStream = new FileInputStream(requestedFile.toString());
 			OutputStream outputStream = client.getSocket().getOutputStream();
@@ -225,7 +233,6 @@ public class JobManager {
 			int bytesRead;
 			System.out.println("Sending.");
             while((bytesRead = inputStream.read(buffer)) != -1){
-            	Util.print(buffer);
             	dos.write(buffer, 0, bytesRead);
             }
 			
@@ -254,21 +261,23 @@ public class JobManager {
 
 
 	private synchronized Job constructJob(JobType type, Path path) {
-		// Remove top level folder from filename
-		String filename = path.subpath(1, path.getNameCount()).toString();
-		
-		long lastModified = 0;
 		try {
+			byte[] checksum = Util.getChecksum(path.toString());
+			long lastModified = 0;
+			
+			// Remove top level folder from filename
+			String filename = path.subpath(1, path.getNameCount()).toString();
 			if (type != JobType.DELETE) {
 				lastModified = Files.getLastModifiedTime(path).toMillis();
 			}
+			return new Job(type, filename, lastModified, checksum);
+
 		} catch (IOException ex) {
 			System.out.println("Error accessing file while creating Job.");
 			ex.printStackTrace();
-			return null;
 		}
 		
-		return new Job(type, filename, lastModified);
+		return null;
 	}
 
 

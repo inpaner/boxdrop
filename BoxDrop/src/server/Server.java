@@ -5,19 +5,20 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+
+import commons.Constants;
 
 public class Server {
 	static Path FOLDER;
 	private ServerSocket serverSocket;
 	
-	public Server(int portNumber) {
+	public Server() {
 		FOLDER = Paths.get("server");
 		
 		ServerJobManager.getInstance().setFolder(FOLDER);
 		
 				try {
-			serverSocket = new ServerSocket(portNumber);
+			serverSocket = new ServerSocket(Constants.PORT);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

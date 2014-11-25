@@ -43,7 +43,6 @@ import java.util.*;
 
 import job.Job;
 import job.JobManager;
-import job.JobType;
 
 /**
  * Class for watching a directory (or tree) for changes to files. 
@@ -148,37 +147,7 @@ public class DirectoryListener {
 			JobManager.getInstance().handle(client, job);
 		}
     	
-    	/*
-    	System.out.println("Job Buffer: " + jobBuffer.size());
-		boolean hasChanges = true;
-		while (hasChanges) {
-			hasChanges = false;
-			
-			ListIterator<Job> jobIterator = jobBuffer.listIterator();
-			Job currentJob = jobIterator.next();
-			
-			while (jobIterator.hasNext()) {
-				
-				// Remove create and modify if create already exists
-	    		if (currentJob.getType().equals(JobType.CREATE) 
-	    				|| currentJob.getType().equals(JobType.MODIFY)) {
-	    			
-	    			for (Job otherJob : jobBuffer) {
-	    				if (currentJob.equals(otherJob)) {
-	    					break;
-	    				} else if (currentJob.isEquivalent(otherJob, JobType.CREATE)) {
-	    					System.out.println("Found a job to remove.");
-	    					jobBuffer.remove(currentJob);
-	    				}
-	    			}
-	    		}
-			}
-		}
-		
-		for (Job job : jobBuffer) {
-			JobManager.getInstance().enqueue(client, job);
-		}
-		*/
+
 	}
 
 

@@ -1,7 +1,6 @@
 package client;
 
 import java.io.IOException;
-import java.nio.file.Path;
 
 
 public class DirectoryListenerThread implements Runnable {

@@ -4,7 +4,6 @@ import java.net.Socket;
 
 import client.AbstractClient;
 import job.JobListenerThread;
-import job.JobManager;
 
 public class ClientProxy extends AbstractClient {
 	ClientProxy(Socket socket) {
