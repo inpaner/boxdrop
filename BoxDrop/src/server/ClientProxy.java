@@ -13,6 +13,4 @@ public class ClientProxy extends AbstractClient {
 		ServerJobListenerThread jlt = new ServerJobListenerThread(this, ServerJobManager.getInstance());
 		new Thread(jlt).start();
 	}
-	
-	
 }

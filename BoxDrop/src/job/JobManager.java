@@ -83,6 +83,7 @@ public class JobManager {
 				isDone = false;
 			}
 			client.sendJob(job);
+			
 		} else if (job.getType().equals(JobType.CREATE)) {
 			handleReceiveCreate(client, job);
 			
@@ -128,8 +129,6 @@ public class JobManager {
 			return;
 		}
 		
-		// TODO order by job time creation method
-		// System.out.println((currentJob == null)+","+isDone);
 		if (currentJob == null && isDone) {
 			currentJob = jobstruct;
 			System.out.println("First job.");
@@ -222,7 +221,9 @@ public class JobManager {
 	 * @throws FileNotFoundException 
 	 */
 	private synchronized boolean deleteRecursive(File path) throws FileNotFoundException {
-        if (!path.exists()) throw new FileNotFoundException(path.getAbsolutePath());
+		System.out.println("Deleting: " + path.toString());
+        
+		if (!path.exists()) throw new FileNotFoundException(path.getAbsolutePath());
         boolean ret = true;
         if (path.isDirectory()) {
             for (File f : path.listFiles()){
@@ -236,19 +237,21 @@ public class JobManager {
 	protected synchronized boolean handleReceiveDelete(AbstractClient client, Job job) {
 		Path toDelete = getLocalizedFile(job);
 		boolean success = false;
-		
-		if (job.isDirectory()) {
+
+		// Job doesn't retain isDirectory. When something gets deleted,   
+		// it can't be checked if it's a directory back in constructJob().
+		if (Files.isDirectory(toDelete)) {  
 			try {
 				success = deleteRecursive(toDelete.toFile());
 			} catch (FileNotFoundException e) {
-				System.out.println("Error deleting.");
+				System.out.println("Error deleting folder.");
 			}
 			
 		} else {
 			try {
 				success = Files.deleteIfExists(toDelete);
 			} catch (IOException e) {
-				System.out.println("Error deleting.");
+				System.out.println("Error deleting file.");
 			}
 		}
 		return success;
@@ -321,7 +324,6 @@ public class JobManager {
 
 		} catch (IOException ex) {
 			System.out.println("Error accessing file while creating Job.");
-			ex.printStackTrace();
 		}
 		
 		return null;
