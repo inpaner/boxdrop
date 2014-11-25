@@ -16,6 +16,7 @@ public class Job implements Serializable {
 	private ArrayList<String> filenames = null;
 	private long lastModified;
 	private JobType type;
+	private boolean toSend = true;
 	
 	public Job(Path path, JobType type) {
 		jobTime = System.currentTimeMillis();
@@ -62,6 +63,13 @@ public class Job implements Serializable {
 		return type;
 	}
 	
+	public boolean isForSending() {
+		return toSend;
+	}
+	
+	public void setAsReceived() {
+		toSend = false;
+	}
 	
 	public String toString() {
 		return(type + ": " + filename + "@" + lastModified);

@@ -20,12 +20,14 @@ public class JobListenerThread implements Runnable {
 	public void run() {
 		while (true) {
 			try {
-				System.out.println("Listening for job requests from " + client.getSocket().getRemoteSocketAddress());
 				InputStream inputStream = client.getSocket().getInputStream();
 				ObjectInputStream objectInput = new ObjectInputStream(inputStream);
+				System.out.println("\n\nListening for job requests from " + client.getSocket().getRemoteSocketAddress());
+				
 				final Job job = (Job) objectInput.readObject();
-				System.out.println("Received job: " + job);
-				jobmanager.handle(client, job);
+				job.setAsReceived();
+				System.out.println("[RECEIVED JOB] " + job);
+				jobmanager.enqueue(client, job);
 				
 				/*
 				new Thread( new Runnable() {

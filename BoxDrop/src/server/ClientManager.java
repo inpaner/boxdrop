@@ -4,6 +4,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
+import client.JobManager;
 import commons.AbstractClient;
 import commons.Job;
 
@@ -26,11 +27,11 @@ public class ClientManager {
 	
 	
 	void broadcast(AbstractClient caller, Job job) {
-		System.out.println("Beginning broadcst. Live via satellite.");
 		for (ClientProxy client : clients) {
 			if (!client.equals(caller)) {
-				System.out.println("Broadcasting job to: " + client.getSocket().getRemoteSocketAddress());
-				client.sendJob(job);
+				System.out.println("Will broadcasting job to: " + client.getSocket().getRemoteSocketAddress());
+				ServerJobManager.getInstance().enqueue(client, job);
+				// client.sendJob(job); // bypass queue
 			}
 		}
 	}

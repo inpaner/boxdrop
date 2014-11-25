@@ -24,6 +24,8 @@ public abstract class AbstractClient {
 			objectStream.writeObject(job);
 			objectStream.flush();
 			outputStream.flush();
+			
+			System.out.println("[SENT JOB] " + job);
 		} catch (IOException e) {
 			closeSocket();
 			e.printStackTrace();

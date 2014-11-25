@@ -10,16 +10,13 @@ import java.util.ArrayList;
 public class Server {
 	static Path FOLDER;
 	private ServerSocket serverSocket;
-	private ArrayList<Socket> liveSockets;
 	
 	public Server(int portNumber) {
 		FOLDER = Paths.get("server");
 		
 		ServerJobManager.getInstance().setFolder(FOLDER);
 		
-		liveSockets = new ArrayList<Socket>();
-
-		try {
+				try {
 			serverSocket = new ServerSocket(portNumber);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -33,7 +30,6 @@ public class Server {
 		try {
 			System.out.println("Waiting for connection.");
 			Socket newSocket = serverSocket.accept();
-			liveSockets.add(newSocket);
 			return newSocket;
 		} catch (Exception e) {
 			e.printStackTrace();

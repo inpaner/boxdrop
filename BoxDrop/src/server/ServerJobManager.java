@@ -16,13 +16,19 @@ public class ServerJobManager extends JobManager {
 		return (ServerJobManager) instance;
 	}
 	
+	
 	@Override
-	protected synchronized void handleCreate(AbstractClient client, Job job) {
-		super.handleCreate(client, job);
+	protected synchronized boolean handleCreate(AbstractClient client, Job job) {
+		boolean success = false;
+		success = super.handleCreate(client, job);
 		
 		// broadcast that shit
-		ClientManager.getInstance().broadcast(client, job);
+		if (success)
+			ClientManager.getInstance().broadcast(client, job);
+		
+		return success;
 	}
+	
 	
 	@Override
 	protected synchronized void handleDelete(AbstractClient client, Job job) {

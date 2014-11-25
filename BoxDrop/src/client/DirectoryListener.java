@@ -49,7 +49,7 @@ import commons.JobType;
  * Modified from https://docs.oracle.com/javase/tutorial/essential/io/notification.html
  */
 
-public class WatchDir {
+public class DirectoryListener {
     private final WatchService watcher;
     private final Map<WatchKey,Path> keys;
     private final boolean recursive;
@@ -102,7 +102,7 @@ public class WatchDir {
     /**
      * Creates a WatchService and registers the given directory
      */
-    WatchDir(Client client, boolean recursive) throws IOException {
+    DirectoryListener(Client client, boolean recursive) throws IOException {
     	this.client = client;
     	Path dir = client.getFolder();
         this.watcher = FileSystems.getDefault().newWatchService();
@@ -124,19 +124,19 @@ public class WatchDir {
     
     private void create(Path path) {
     	Job job = JobManager.getInstance().newCreate(path);
-    	client.sendJob(job);
+    	JobManager.getInstance().enqueue(client, job);
     }
     
     
     private void modify(Path path) {
-    	Job job = JobManager.getInstance().newModify(path);
-    	client.sendJob(job);
+    	// Job job = JobManager.getInstance().newModify(path);
+    	// client.sendJob(job);
     }
     
     
     private void delete(Path path) {
     	Job job = JobManager.getInstance().newDelete(path);
-    	client.sendJob(job);
+    	JobManager.getInstance().enqueue(client, job);
     }
     
     /**

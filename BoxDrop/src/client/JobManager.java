@@ -12,6 +12,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import server.ClientProxy;
@@ -58,30 +60,77 @@ public class JobManager {
 	}
 	
 	
-	public synchronized void handle(AbstractClient client, Job job) {
-		if (job.getType().equals(JobType.CREATE)) {
-			handleCreate(client, job);
-		} else if (job.getType().equals(JobType.REQUEST)) {
-			handleRequest(client, job);
-		} else if (job.getType().equals(JobType.DELETE)) {
-			handleDelete(client, job);
+	private ArrayList<JobStruct> jobs = new ArrayList<>(); 
+	private JobStruct currentJob = null;
+	
+	public synchronized void enqueue(AbstractClient client, Job job) {
+		// TODO order by job time creation method
+		
+		JobStruct jobstruct = new JobStruct(client, job);
+		if (currentJob == null) {
+			handle(jobstruct);
+		} else {
+			jobs.add(jobstruct);
 		}
 	}
 	
-	protected synchronized void handleCreate(AbstractClient client, Job job) {
+	
+	private class JobStruct {
+		Job job;
+		AbstractClient client;
+		JobStruct(AbstractClient client, Job job) {
+			this.client = client;
+			this.job = job;
+		}
+	}
+	
+	
+	public synchronized void handle(JobStruct jobstruct) {
+		AbstractClient client = jobstruct.client; 
+		Job job = jobstruct.job;
+		
+		if (job.isForSending()) {
+			client.sendJob(job);
+			
+		} else if (job.getType().equals(JobType.CREATE)) {
+			handleCreate(client, job);
+			
+		} else if (job.getType().equals(JobType.REQUEST)) {
+			handleRequest(client, job);
+			
+		} else if (job.getType().equals(JobType.DELETE)) {
+			handleDelete(client, job);
+		}
+		
+		finishJob();
+	}
+	
+	
+	public synchronized void finishJob() {
+		if (jobs.isEmpty()) {
+			currentJob = null;
+		} else {
+			JobStruct nextJob = jobs.get(0);
+			handle(nextJob);
+		}
+	}
+	
+	
+	protected synchronized boolean handleCreate(AbstractClient client, Job job) {
 		// check if exists
+		Path toCreate = getLocalizedFile(job);
+		if (Files.exists(toCreate)) {
+			return false;
+		}
 		
 		
 		// if not, send request
 		Job request = newRequest(job);
 		client.sendJob(request);
-		System.out.println("Sent request job: " + request);
 		
 		// get file from opposite end
 		try {
-			
-			Path receivedFile = getLocalizedFile(job);
-			FileOutputStream outputStream = new FileOutputStream( receivedFile.toFile() );
+			FileOutputStream outputStream = new FileOutputStream( toCreate.toFile() );
 			
 			int read = 0;
 			byte[] buffer = new byte[BUFFER_SIZE];
@@ -89,18 +138,8 @@ public class JobManager {
 			InputStream inputStream = client.getSocket().getInputStream();
 			DataInputStream dis = new DataInputStream(inputStream);
 			
-			System.out.println("Receiving: ");
-			
-			boolean first = true;
+			System.out.println("\nReceiving file.");
 			while ((read = dis.read(buffer)) != -1) {
-				
-				// Cheap hack. Ignores first read, which seems to be
-				// the unflushed ObjectStream
-				if (first) {
-					first = false;
-					continue;
-				}
-				
 				if (read == Constants.EOF.length) {
 					byte[] actualRead = Arrays.copyOfRange(buffer, 0, read);
 					if (Arrays.equals(actualRead, Constants.EOF))
@@ -110,15 +149,17 @@ public class JobManager {
 				outputStream.write(buffer, 0, read);  
 			}
 			
-			Files.setLastModifiedTime( receivedFile, FileTime.fromMillis(job.getLastModified()) );
+			Files.setLastModifiedTime( toCreate, FileTime.fromMillis(job.getLastModified()) );
 			System.out.println("Created new file: " + job.getFilename());
 			outputStream.close();
 		} catch (IOException e) {
 			// TODO handle death
 			e.printStackTrace();
+			return false;
 		} 
 		
-		// broadcast that shit
+		return true;
+
 	}
 	
 	
@@ -147,6 +188,7 @@ public class JobManager {
 			int bytesRead;
 			System.out.println("Sending: ");
             while((bytesRead = inputStream.read(buffer)) != -1){
+            	Util.print(buffer);
             	dos.write(buffer, 0, bytesRead);
             }
 			

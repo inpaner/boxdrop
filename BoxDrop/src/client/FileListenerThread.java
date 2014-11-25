@@ -14,7 +14,7 @@ public class FileListenerThread implements Runnable {
 	@Override
 	public void run() {
 		try {
-			new WatchDir(client, true).processEvents();
+			new DirectoryListener(client, true).processEvents();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
