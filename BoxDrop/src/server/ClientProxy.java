@@ -3,7 +3,6 @@ package server;
 import java.net.Socket;
 
 import client.AbstractClient;
-import job.JobListenerThread;
 
 public class ClientProxy extends AbstractClient {
 	ClientProxy(Socket socket) {
@@ -11,7 +10,7 @@ public class ClientProxy extends AbstractClient {
 	}
 	
 	void startListening() {
-		JobListenerThread jlt = new JobListenerThread(this, ServerJobManager.getInstance());
+		ServerJobListenerThread jlt = new ServerJobListenerThread(this, ServerJobManager.getInstance());
 		new Thread(jlt).start();
 	}
 	

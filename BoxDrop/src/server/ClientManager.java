@@ -31,8 +31,12 @@ public class ClientManager {
 			if (!client.equals(caller)) {
 				System.out.println("Will broadcast job to: " + client.getSocket().getRemoteSocketAddress());
 				ServerJobManager.getInstance().handle(client, job);
-				// client.sendJob(job); // bypass queue
 			}
 		}
+	}
+	
+	
+	void remove(ClientProxy client) {
+		clients.remove(client);
 	}
 }

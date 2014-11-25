@@ -8,7 +8,8 @@ import job.JobManager;
 
 public class Client extends AbstractClient {
 	private Path folder;
-	
+
+
 	public Client(Socket socket, Path folder) {
 		super(socket);
 		this.folder = folder;
@@ -19,6 +20,7 @@ public class Client extends AbstractClient {
 		
 		new Thread(new DirectoryListenerThread(this)).start();
 	}
+
 	
 	Path getFolder() {
 		return folder;

@@ -9,9 +9,8 @@ class NewConnectionThread implements Runnable {
 	
 	@Override
 	public void run() {
-		// Send file list
-		// Handle inconsistencies
-		
+		// Stub for sending files over
+
 		client.startListening();
 	}
 

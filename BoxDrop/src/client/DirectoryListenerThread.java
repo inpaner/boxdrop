@@ -6,6 +6,7 @@ import java.io.IOException;
 public class DirectoryListenerThread implements Runnable {
 	private Client client;
 	
+	
 	public DirectoryListenerThread(Client client) {
 		this.client = client;
 	}

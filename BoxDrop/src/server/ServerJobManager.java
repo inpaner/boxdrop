@@ -38,5 +38,4 @@ public class ServerJobManager extends JobManager {
 		
 		return success;
 	}
-	
 }

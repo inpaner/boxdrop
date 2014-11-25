@@ -1,19 +1,15 @@
-
-
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import commons.Constants;
 import server.Server;
 
+
 public class ServerDriver {
+
+	
 	public static void main(String[] args) {
-		new Server(Paths.get("server"));
-	}
-	
-	
-	public static void main2(String[] args) throws IOException {
 		if (args.length > 1)
             usage();
         
@@ -23,6 +19,9 @@ public class ServerDriver {
 		}
 		
 		Path path = Paths.get(folder);
+		try {
+			Files.createDirectory(path);
+		} catch (IOException e) {} // Folder already exists. Like we care.
 		
 		new Server(path);
 	}
